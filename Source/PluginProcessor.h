@@ -27,14 +27,17 @@ namespace Parameters
     {
         String labelName;
         float defaultValue;
+        float min;
+        float max;
+        float increment;
     };
     
     static std::map<Identifier, ParameterInfo> parameterInfoMap
     {
-        { delayTime,   { "Delay Time", 0.5f } },
-        { wetMix,      { "Dry/Wet",    0.5f } },
-        { feedback,    { "Feedback",   0.5f } },
-        { tapMix,      { "Tap Mix",    0.5f } }
+        { delayTime,   { "Delay Time", 0.5f, 0.f, 1.0f, 0.01f } },
+        { wetMix,      { "Dry/Wet",    0.5f, 0.f, 1.0f, 0.01f } },
+        { feedback,    { "Feedback",   0.5f, 0.f, 1.0f, 0.01f } },
+        { tapMix,      { "Tap Mix",    0.5f, 0.f, 1.0f, 0.01f } }
     };
 }
 
@@ -81,8 +84,16 @@ public:
     AudioProcessorValueTreeState& getState();
     
 private:
+    AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     //==============================================================================
-    std::unique_ptr<AudioProcessorValueTreeState> state;
+    AudioParameterFloat* delayTime = nullptr;
+    AudioParameterFloat* wetMix    = nullptr;
+    AudioParameterFloat* tapMix    = nullptr;
+    AudioParameterFloat* feedback    = nullptr;
+    
+    LinearSmoothedValue<float> rampedDelayTime, rampedWetMix, rampedTapMix, rampedFeedback;
+    
+    AudioProcessorValueTreeState state;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TapeDelayAudioProcessor)
 };

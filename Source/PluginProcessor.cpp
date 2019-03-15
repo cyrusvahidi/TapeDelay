@@ -11,6 +11,30 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+AudioProcessorValueTreeState::ParameterLayout TapeDelayAudioProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<RangedAudioParameter>> params;
+    
+    {
+        using FloatParamPair = std::pair<Identifier, AudioParameterFloat*&>;
+        
+        for (auto p : { FloatParamPair (Parameters::delayTime, delayTime),
+            FloatParamPair (Parameters::wetMix,  wetMix),
+            FloatParamPair (Parameters::tapMix,    tapMix),
+            FloatParamPair (Parameters::feedback, feedback)
+        })
+        {
+            auto& info = Parameters::parameterInfoMap[p.first];
+            auto param = std::make_unique<AudioParameterFloat> (p.first.toString(), info.labelName, NormalisableRange<float>(info.min, info.max, info.increment), info.defaultValue);
+            
+            p.second = param.get();
+            params.push_back (std::move (param));
+        }
+    }
+    
+    return { params.begin(), params.end() };
+}
+
 //==============================================================================
 TapeDelayAudioProcessor::TapeDelayAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -22,16 +46,7 @@ TapeDelayAudioProcessor::TapeDelayAudioProcessor()
                        .withOutput ("Output", AudioChannelSet::stereo(), true)
                      #endif
                        ),
-    state(
-        new AudioProcessorValueTreeState(*this, nullptr, "Params",
-            {
-                std::make_unique<AudioParameterFloat>("delayTime", "Delay Time", NormalisableRange<float>(0, 2, 0.01f), 0.5f),
-                std::make_unique<AudioParameterFloat>("wetMix", "Dry/Wet", NormalisableRange<float>(0, 1, 0.01f), 0.5f),
-                std::make_unique<AudioParameterFloat>("tapMix", "Tap Mix", NormalisableRange<float>(0, 1, 0.01f), 0.5f),
-                std::make_unique<AudioParameterFloat>("feedback", "Feedback", NormalisableRange<float>(0, 1, 0.01f), 0.5f)
-            }
-        )
-    )
+      state(*this, nullptr, "PARAMETERS", createParameterLayout())
 #endif
 {
 }
@@ -198,4 +213,9 @@ void TapeDelayAudioProcessor::setStateInformation (const void* data, int sizeInB
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new TapeDelayAudioProcessor();
+}
+
+AudioProcessorValueTreeState& TapeDelayAudioProcessor::getState()
+{
+    return state; // Reference to the APTVS to be accessed by processor children
 }
