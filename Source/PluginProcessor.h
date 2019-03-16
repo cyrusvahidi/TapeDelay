@@ -34,14 +34,15 @@ namespace Parameters
     
     static std::map<Identifier, ParameterInfo> parameterInfoMap
     {
-        { delayTime,   { "Delay Time", 0.5f, 0.f, 1.0f, 0.01f } },
+        { delayTime,   { "Delay Time", 0.1f, 0.f, 2.0f, 0.01f } },
         { wetMix,      { "Dry/Wet",    0.5f, 0.f, 1.0f, 0.01f } },
         { feedback,    { "Feedback",   0.5f, 0.f, 1.0f, 0.01f } },
         { tapMix,      { "Tap Mix",    0.5f, 0.f, 1.0f, 0.01f } }
     };
 }
 
-class TapeDelayAudioProcessor  : public AudioProcessor
+class TapeDelayAudioProcessor  : public AudioProcessor,
+                                 public AudioProcessorValueTreeState::Listener
 {
 public:
     //==============================================================================
@@ -51,6 +52,8 @@ public:
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
+    
+    void parameterChanged (const String &parameterID, float newValue) override;
 
    #ifndef JucePlugin_PreferredChannelConfigurations
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
@@ -86,12 +89,16 @@ public:
 private:
     AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     //==============================================================================
-    AudioParameterFloat* delayTime = nullptr;
-    AudioParameterFloat* wetMix    = nullptr;
-    AudioParameterFloat* tapMix    = nullptr;
-    AudioParameterFloat* feedback    = nullptr;
+    AudioParameterFloat* _delayTime = nullptr;
+    AudioParameterFloat* _wetMix    = nullptr;
+    AudioParameterFloat* _tapMix    = nullptr;
+    AudioParameterFloat* _feedback    = nullptr;
     
     LinearSmoothedValue<float> rampedDelayTime, rampedWetMix, rampedTapMix, rampedFeedback;
+    
+    AudioBuffer<float> delayBuffer;
+    int delayBufferLength;
+    int delayReadPosition, delayWritePosition;
     
     AudioProcessorValueTreeState state;
     

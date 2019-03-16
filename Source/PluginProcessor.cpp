@@ -18,10 +18,10 @@ AudioProcessorValueTreeState::ParameterLayout TapeDelayAudioProcessor::createPar
     {
         using FloatParamPair = std::pair<Identifier, AudioParameterFloat*&>;
         
-        for (auto p : { FloatParamPair (Parameters::delayTime, delayTime),
-            FloatParamPair (Parameters::wetMix,  wetMix),
-            FloatParamPair (Parameters::tapMix,    tapMix),
-            FloatParamPair (Parameters::feedback, feedback)
+        for (auto p : { FloatParamPair (Parameters::delayTime, _delayTime),
+            FloatParamPair (Parameters::wetMix,  _wetMix),
+            FloatParamPair (Parameters::tapMix,    _tapMix),
+            FloatParamPair (Parameters::feedback, _feedback)
         })
         {
             auto& info = Parameters::parameterInfoMap[p.first];
@@ -46,9 +46,18 @@ TapeDelayAudioProcessor::TapeDelayAudioProcessor()
                        .withOutput ("Output", AudioChannelSet::stereo(), true)
                      #endif
                        ),
-      state(*this, nullptr, "PARAMETERS", createParameterLayout())
+        delayBuffer(2, 1),
+        state(*this, nullptr, "PARAMETERS", createParameterLayout())
 #endif
 {
+    state.addParameterListener (Parameters::delayTime, this);
+    state.addParameterListener (Parameters::feedback, this);
+    state.addParameterListener (Parameters::wetMix, this);
+    
+    delayBufferLength = 1;
+    
+    delayReadPosition = 0;
+    delayWritePosition = 0;
 }
 
 TapeDelayAudioProcessor::~TapeDelayAudioProcessor()
@@ -120,14 +129,48 @@ void TapeDelayAudioProcessor::changeProgramName (int index, const String& newNam
 //==============================================================================
 void TapeDelayAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    float rampLengthInSeconds = 1;
+    rampedDelayTime.reset(sampleRate, rampLengthInSeconds);
+    rampedWetMix.reset(sampleRate, rampLengthInSeconds);
+    rampedFeedback.reset(sampleRate, rampLengthInSeconds);
+    rampedTapMix.reset(sampleRate, rampLengthInSeconds);
+    
+    rampedDelayTime.setValue(*_delayTime);
+    rampedWetMix.setValue(*_wetMix);
+    rampedFeedback.setValue(*_feedback);
+    rampedTapMix.setValue(*_tapMix);
+    
+    delayBufferLength = (int) (2.0 * sampleRate);
+    if(delayBufferLength < 1)
+        delayBufferLength = 1;
+    delayBuffer.setSize(2, delayBufferLength);
+    delayBuffer.clear();
+    
+    
+    delayReadPosition = (int)(delayWritePosition - (*_delayTime * getSampleRate()) + delayBufferLength) % delayBufferLength;
+    
 }
 
 void TapeDelayAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+}
+
+void TapeDelayAudioProcessor::parameterChanged (const String &parameterID, float newValue)
+{
+    if (parameterID == Parameters::delayTime.toString()) {
+         rampedDelayTime.setValue(newValue);
+        *_delayTime = newValue;
+    }
+    else if (parameterID == Parameters::feedback.toString()) {
+        rampedFeedback.setValue(newValue);
+        *_feedback = newValue;
+    }
+    else if (parameterID == Parameters::wetMix.toString()) {
+        rampedWetMix.setValue(newValue);
+        *_wetMix = newValue;
+    }
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -159,6 +202,10 @@ void TapeDelayAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
+    
+    const auto numSamples = buffer.getNumSamples();
+    
+    int dpr, dpw;
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -169,18 +216,45 @@ void TapeDelayAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
+        float* delayData = delayBuffer.getWritePointer (jmin (channel, delayBuffer.getNumChannels() - 1));
+        
+        dpw = delayWritePosition;
 
-        // ..do something to the data...
+        for (int i = 0; i < numSamples; i++)
+        {
+            dpr = fmodf((float) dpw
+                        - (float) (rampedDelayTime.getNextValue() * getSampleRate())
+                        + (float) delayBufferLength,
+                          (float) delayBufferLength);
+            
+            const float in = channelData[i];
+            float out = 0.0;
+            
+            // Linear interpolation of delay line samples
+            float fraction = dpr - floorf(dpr);
+            int previousSample = (int) floorf(dpr);
+            int nextSample = (previousSample + 1) % delayBufferLength;
+            
+            float interpolatedSample = fraction * delayData[nextSample] + (1.0f - fraction) * delayData[previousSample];
+            
+            float wet = rampedWetMix.getNextValue();
+            out = (1 - wet) * in + wet * interpolatedSample;
+            
+            delayData[dpw] = in + (interpolatedSample * rampedFeedback.getNextValue());
+            
+            if (++dpr >= delayBufferLength)
+                dpr = 0;
+            if (++dpw >= delayBufferLength)
+                dpw = 0;
+            
+            channelData[i] = out;
+        }
     }
+    delayReadPosition = dpr;
+    delayWritePosition = dpw;
 }
 
 //==============================================================================

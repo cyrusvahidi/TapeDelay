@@ -20,7 +20,7 @@ TapeDelayAudioProcessorEditor::TapeDelayAudioProcessorEditor (TapeDelayAudioProc
     for (auto paramID : { Parameters::delayTime, Parameters::wetMix, Parameters::tapMix, Parameters::feedback })
         addFloatParameter (paramID);
     
-    setSize (400, 300);
+    setSize (600, 300);
 }
 
 TapeDelayAudioProcessorEditor::~TapeDelayAudioProcessorEditor()
@@ -35,7 +35,6 @@ void TapeDelayAudioProcessorEditor::paint (Graphics& g)
 
     g.setColour (Colours::white);
     g.setFont (15.0f);
-    g.drawFittedText ("Hello World!", getLocalBounds(), Justification::centred, 1);
 }
 
 void TapeDelayAudioProcessorEditor::resized()
