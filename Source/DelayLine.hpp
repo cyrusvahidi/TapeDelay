@@ -23,10 +23,12 @@ public:
 
     void prepareToPlay(double sampleRate, float delayTime, int numberOfReadPointers, float density);
     
-    void write(float inputSample);
-    float read(int readPointerIndex);
+    void write(float inputSample, int channel);
+    float read(int readPointerIndex, int channel);
 private:
     AudioProcessorValueTreeState& APVTS;
+    
+    double sampleRate;
     
     AudioBuffer<float> delayBuffer;
     int delayBufferLength;
