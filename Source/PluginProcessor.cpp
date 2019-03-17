@@ -19,8 +19,8 @@ AudioProcessorValueTreeState::ParameterLayout TapeDelayAudioProcessor::createPar
         using FloatParamPair = std::pair<Identifier, AudioParameterFloat*&>;
         
         for (auto p : { FloatParamPair (Parameters::delayTime, _delayTime),
-            FloatParamPair (Parameters::wetMix,  _wetMix),
-            FloatParamPair (Parameters::tapMix,    _tapMix),
+            FloatParamPair (Parameters::wetMix,     _wetMix),
+            FloatParamPair (Parameters::readHeadMix, _readHeadMix),
             FloatParamPair (Parameters::feedback, _feedback)
         })
         {
@@ -133,12 +133,12 @@ void TapeDelayAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     rampedDelayTime.reset(sampleRate, rampLengthInSeconds);
     rampedWetMix.reset(sampleRate, rampLengthInSeconds);
     rampedFeedback.reset(sampleRate, rampLengthInSeconds);
-    rampedTapMix.reset(sampleRate, rampLengthInSeconds);
+    rampedReadHeadMix.reset(sampleRate, rampLengthInSeconds);
     
     rampedDelayTime.setValue(*_delayTime);
     rampedWetMix.setValue(*_wetMix);
     rampedFeedback.setValue(*_feedback);
-    rampedTapMix.setValue(*_tapMix);
+    rampedReadHeadMix.setValue(*_readHeadMix);
     
     delayBufferLength = (int) (2.0 * sampleRate);
     if(delayBufferLength < 1)
@@ -207,12 +207,6 @@ void TapeDelayAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuff
     
     int dpr, dpw;
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 

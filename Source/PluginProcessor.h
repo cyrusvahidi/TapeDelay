@@ -12,34 +12,11 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <map>
+#include "Parameters.hpp"
 
 //==============================================================================
 /**
 */
-namespace Parameters
-{
-    static const Identifier delayTime  { "delayTime" };
-    static const Identifier wetMix     { "wetMix" };
-    static const Identifier feedback   { "feedback" };
-    static const Identifier tapMix     { "tapMix" };
-    
-    struct ParameterInfo
-    {
-        String labelName;
-        float defaultValue;
-        float min;
-        float max;
-        float increment;
-    };
-    
-    static std::map<Identifier, ParameterInfo> parameterInfoMap
-    {
-        { delayTime,   { "Delay Time", 0.1f, 0.f, 2.0f, 0.01f } },
-        { wetMix,      { "Dry/Wet",    0.5f, 0.f, 1.0f, 0.01f } },
-        { feedback,    { "Feedback",   0.5f, 0.f, 1.0f, 0.01f } },
-        { tapMix,      { "Tap Mix",    0.5f, 0.f, 1.0f, 0.01f } }
-    };
-}
 
 class TapeDelayAudioProcessor  : public AudioProcessor,
                                  public AudioProcessorValueTreeState::Listener
@@ -89,15 +66,20 @@ public:
 private:
     AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     //==============================================================================
-    AudioParameterFloat* _delayTime = nullptr;
-    AudioParameterFloat* _wetMix    = nullptr;
-    AudioParameterFloat* _tapMix    = nullptr;
-    AudioParameterFloat* _feedback    = nullptr;
+    AudioParameterFloat* _delayTime    = nullptr;
+    AudioParameterFloat* _wetMix       = nullptr;
+    AudioParameterFloat* _readHeadMix  = nullptr;
+    AudioParameterFloat* _feedback     = nullptr;
+    AudioParameterFloat* _density      = nullptr;
+    AudioParameterFloat* _lfoRate      = nullptr;
+    AudioParameterFloat* _lfoAmount    = nullptr;
+    AudioParameterFloat* _tapeSpeed    = nullptr;
     
-    LinearSmoothedValue<float> rampedDelayTime, rampedWetMix, rampedTapMix, rampedFeedback;
+    LinearSmoothedValue<float> rampedDelayTime, rampedWetMix, rampedReadHeadMix, rampedFeedback;
     
     AudioBuffer<float> delayBuffer;
     int delayBufferLength;
+    
     int delayReadPosition, delayWritePosition;
     
     AudioProcessorValueTreeState state;

@@ -17,7 +17,7 @@ TapeDelayAudioProcessorEditor::TapeDelayAudioProcessorEditor (TapeDelayAudioProc
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    for (auto paramID : { Parameters::delayTime, Parameters::wetMix, Parameters::tapMix, Parameters::feedback })
+    for (auto paramID : { Parameters::delayTime, Parameters::wetMix, Parameters::readHeadMix, Parameters::feedback })
         addFloatParameter (paramID);
     
     setSize (600, 300);
@@ -57,7 +57,7 @@ void TapeDelayAudioProcessorEditor::resized()
         return nullptr;
     };
     
-    for (auto paramID : { Parameters::delayTime, Parameters::wetMix, Parameters::tapMix, Parameters::feedback })
+    for (auto paramID : { Parameters::delayTime, Parameters::wetMix, Parameters::readHeadMix, Parameters::feedback })
     {
         getSliderForParameter (paramID)->setBounds (paramSlice.removeFromLeft (sliderWidth));
         paramSlice.removeFromLeft (sliderGap);
