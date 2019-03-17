@@ -13,6 +13,41 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <map>
 #include "Parameters.hpp"
+//#include "DelayLine.hpp"
+//namespace Parameters
+//{
+//    static const Identifier delayTime   { "delayTime"   };
+//    static const Identifier wetMix      { "wetMix"      };
+//    static const Identifier feedback    { "feedback"    };
+//    static const Identifier readHeadMix { "readHeadMix" };
+//    static const Identifier density     { "density"     };
+//    static const Identifier lfoRate     { "lfoRate"     };
+//    static const Identifier lfoAmount   { "lfoAmount"   };
+//    static const Identifier tapeSpeed   { "tapeSpeed"   };
+//    // TODO: add distortion control
+//    // TODO: init other params in processor
+//
+//    struct ParameterInfo
+//    {
+//        String labelName;
+//        float defaultValue;
+//        float min;
+//        float max;
+//        float increment;
+//    };
+//
+//    static std::map<Identifier, ParameterInfo> parameterInfoMap
+//    {
+//        { delayTime,   { "Delay Time", 0.2f, 0.f, 2.0f, 0.01f   } },
+//        { wetMix,      { "Dry/Wet",    0.5f, 0.f, 1.0f, 0.01f   } },
+//        { feedback,    { "Feedback",   0.5f, 0.f, 0.995f, 0.01f } },
+//        { readHeadMix, { "Head Mix",   0.5f, 0.f, 1.0f, 0.01f   } },
+//        { density,     { "Density",    0.5f, 0.f, 1.0f, 0.01f   } },
+//        { lfoRate,     { "lfoRate",    10.f, 1.f, 20.f, 0.01f   } },
+//        { lfoAmount,   { "lfoAmount",  0.f, 0.f, 1.f, 0.01f     } },
+//        { tapeSpeed,   { "tapeSpeed",  0.5f, 0.f, 1.f, 0.01f    } }
+//    };
+//}
 
 //==============================================================================
 /**
@@ -65,6 +100,8 @@ public:
     
 private:
     AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    
+    AudioProcessorValueTreeState state;
     //==============================================================================
     AudioParameterFloat* _delayTime    = nullptr;
     AudioParameterFloat* _wetMix       = nullptr;
@@ -80,9 +117,9 @@ private:
     AudioBuffer<float> delayBuffer;
     int delayBufferLength;
     
-    int delayReadPosition, delayWritePosition;
+//    DelayLine delayLine;
     
-    AudioProcessorValueTreeState state;
+    int delayReadPosition, delayWritePosition;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TapeDelayAudioProcessor)
 };

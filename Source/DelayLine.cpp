@@ -10,17 +10,15 @@
 #include "Parameters.hpp"
 
 DelayLine::DelayLine(AudioProcessorValueTreeState& state) :
-    APVTS(state)
+    APVTS(state),
+    delayBuffer(2, 1)
 {
     state.addParameterListener (Parameters::delayTime, this);
-
 }
 
-void DelayLine::parameterChanged (const String &parameterID, float newValue)
+DelayLine::~DelayLine()
 {
-    if (parameterID == Parameters::delayTime.toString()) {
-        rampedDelayTime.setValue(newValue);
-    }
+    
 }
 
 /* Given the initial delay time, the number of read pointers (heads) and a density factor
@@ -64,4 +62,11 @@ float DelayLine::read(int readPointerIndex, int channel)
     float interpolatedSample = fraction * delayBuffer.getSample(channel, nextSample) + (1.0f - fraction) * delayBuffer.getSample(channel, previousSample);
     
     return interpolatedSample;
+}
+
+void DelayLine::parameterChanged (const String &parameterID, float newValue)
+{
+    if (parameterID == Parameters::delayTime.toString()) {
+        rampedDelayTime.setValue(newValue);
+    }
 }
